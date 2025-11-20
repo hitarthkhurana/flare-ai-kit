@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import fitz  # type: ignore[reportMissingTypeStubs]
-from google.adk.tools import ToolContext  # noqa: TC002
+from google.adk.tools.tool_context import ToolContext  # noqa: TC002
 
 from flare_ai_kit.agent.tools import adk_tool
 

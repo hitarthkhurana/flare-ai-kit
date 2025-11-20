@@ -38,7 +38,7 @@ def upsert_to_qdrant(
 
     # Create collection if it doesn't exist
     if collection_name not in [c.name for c in client.get_collections().collections]:
-        client.recreate_collection(
+        client.recreate_collection(  # type: ignore[reportUnknownMemberType]
             collection_name=collection_name,
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
         )
@@ -57,4 +57,4 @@ def upsert_to_qdrant(
             )
             for item in batch
         ]
-        client.upsert(collection_name=collection_name, points=points)
+        client.upsert(collection_name=collection_name, points=points)  # type: ignore[reportUnknownMemberType]

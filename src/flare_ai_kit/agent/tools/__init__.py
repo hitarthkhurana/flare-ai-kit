@@ -6,7 +6,8 @@ from functools import wraps
 from typing import Any, TypeVar, cast
 
 import structlog
-from google.adk.tools import FunctionTool, LongRunningFunctionTool
+from google.adk.tools.function_tool import FunctionTool
+from google.adk.tools.long_running_tool import LongRunningFunctionTool
 
 logger = structlog.get_logger(__name__)
 

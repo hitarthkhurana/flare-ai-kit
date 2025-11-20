@@ -1,6 +1,18 @@
 """Module providing tools for data ingestion pipelines."""
 
-from .github_ingestor import GithubIngestor
-from .pdf_processor import PDFProcessor
+from .settings import (
+    IngestionSettings,
+    OnchainContractSettings,
+    PDFFieldExtractionSettings,
+    PDFIngestionSettings,
+    PDFTemplateSettings,
+)
 
-__all__ = ["GithubIngestor", "PDFProcessor"]
+__all__ = [
+    "IngestionSettings",
+    "IngestionSettings",
+    "OnchainContractSettings",
+    "PDFFieldExtractionSettings",
+    "PDFIngestionSettings",
+    "PDFTemplateSettings",
+]

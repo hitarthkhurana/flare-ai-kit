@@ -1,4 +1,5 @@
-from .attestation import VtpmAttestation
-from .validation import VtpmValidation
+"""TEE subpackage."""
 
-__all__ = ["VtpmAttestation", "VtpmValidation"]
+from .settings import TeeSettings
+
+__all__ = ["TeeSettings"]

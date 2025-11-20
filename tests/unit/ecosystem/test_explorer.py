@@ -253,7 +253,7 @@ class TestBlockExplorer:
             mock_get.return_value = {"result": '{"not":"a list"}'}
 
             # Call the method and expect exception
-            with pytest.raises(AbiError, match="Parsed ABI .* is not a list"):
+            with pytest.raises(AbiError, match="Parsed ABI .* is not a list"):  # noqa: RUF043
                 await block_explorer.get_contract_abi("0x1234567890abcdef")
 
             # Verify
