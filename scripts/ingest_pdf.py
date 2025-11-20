@@ -6,17 +6,17 @@ import asyncio
 import json
 import os
 import re
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, mock_open, patch
 
-# Import from local data directory
-from data.create_sample_invoice import create_invoice_and_build_template
+import structlog
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+# Import from local data directory
+from data.create_sample_invoice import create_invoice_and_build_template
 from flare_ai_kit import FlareAIKit
 from flare_ai_kit.agent.pdf_tools import read_pdf_text_tool
 from flare_ai_kit.config import AppSettings
@@ -27,69 +27,84 @@ from flare_ai_kit.ingestion.settings import (
     PDFTemplateSettings,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+logger = structlog.get_logger(__name__)
+
 MOCK_TX_HASH = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
+SYSTEM_INSTRUCTION = (
+    "You are a PDF extraction agent. Independently read PDFs using tools and return ONLY JSON "
+    "matching the user provided template schema. \n"
+    "- Always call read_pdf_text first.\n"
+    "- If a field is not found, set value to null.\n"
+    "- Reply with a single JSON object only (no markdown, no prose)."
+)
 
-def _prompt(pdf: Path, template: PDFTemplateSettings, max_pages: int | None) -> str:
-    """Build the prompt from the template."""
+
+def build_prompt(
+    pdf: Path, template: PDFTemplateSettings, max_pages: int | None
+) -> str:
+    """Constructs the analysis prompt."""
     return (
-        "Parse this PDF using tools and return ONLY JSON per the template.\n"
-        f"PDF_PATH: {pdf}\nMAX_PAGES: {max_pages or 'ALL'}\n\n"
-        "TEMPLATE_JSON:\n```json\n" + json.dumps(template.model_dump()) + "\n```\n\n"
-        "- Call read_pdf_text(file_path=PDF_PATH, max_pages=MAX_PAGES).\n"
-        "- Extract each field in TEMPLATE_JSON.fields.\n"
-        "- Reply with a single JSON object (no markdown)."
+        f"PDF_PATH: {pdf}\nMAX_PAGES: {max_pages or 'ALL'}\n"
+        f"TEMPLATE_SCHEMA:\n```json\n{json.dumps(template.model_dump())}\n```\n"
+        "Extract fields based on the schema above from the PDF."
     )
 
 
-def _json_from(text: str) -> dict[str, Any]:
-    """Extract JSON from agent return text."""
+def extract_json(text: str) -> dict[str, Any]:
+    """Robustly extracts JSON from raw LLM response text."""
     try:
         return json.loads(text)
-    except json.JSONDecodeError as e:
-        fence = re.search(
+    except json.JSONDecodeError as err:
+        # Try to find JSON block within markdown fences or raw braces
+        if match := re.search(
             r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL | re.IGNORECASE
-        )
-        if fence:
-            return json.loads(fence.group(1))
-        blob = re.search(r"\{.*\}", text, re.DOTALL)
-        if blob:
-            return json.loads(blob.group(0))
-        msg = f"Agent response is not valid JSON:\n{text}"
-        raise RuntimeError(msg) from e
+        ):
+            return json.loads(match.group(1))
+        if match := re.search(r"\{.*\}", text, re.DOTALL):
+            return json.loads(match.group(0))
+        msg = f"Could not extract valid JSON from response: {text[:100]}..."
+        raise ValueError(msg) from err
 
 
-async def parse_pdf_to_template_json(
+async def run_extraction_agent(
     agent: Agent,
-    pdf: str | Path,
+    pdf: Path,
     template: PDFTemplateSettings,
-    max_pages: int | None = None,
 ) -> dict[str, Any]:
     """Setup in-memory ADK agent, give it the PDF, template and prompt."""
-    pdf = Path(pdf)
     svc = InMemorySessionService()
-    await svc.create_session(app_name="app", user_id="u", session_id="s")
+    await svc.create_session(app_name="app", user_id="user", session_id="session")
     runner = Runner(agent=agent, app_name="app", session_service=svc)
 
-    msg = types.Content(
-        role="user", parts=[types.Part(text=_prompt(pdf, template, max_pages))]
-    )
-    final_text = None
-    print(f"Calling {agent.name} using model: {agent.model}")
-    async for ev in runner.run_async(user_id="u", session_id="s", new_message=msg):
-        if ev.is_final_response() and ev.content and ev.content.parts:
-            final_text = ev.content.parts[0].text
+    prompt = build_prompt(pdf, template, max_pages=1)
+    message = types.Content(role="user", parts=[types.Part(text=prompt)])
+
+    logger.info("invoking_agent", model=agent.model)
+
+    final_text = ""
+    async for event in runner.run_async(
+        user_id="user", session_id="session", new_message=message
+    ):
+        if event.is_final_response() and event.content and event.content.parts:
+            final_text = event.content.parts[0].text
             break
+
     if not final_text:
         msg = "Agent produced no response."
         raise RuntimeError(msg)
-    return _json_from(final_text)
+
+    return extract_json(final_text)
 
 
 async def main() -> None:
     """Main function to demonstrate PDF ingestion and processing."""
     # Create PDF and save it
     pdf_path, template = create_invoice_and_build_template("generated_invoice")
+    logger.info("loaded pdf", path=pdf_path)
 
     # Add template to global settings
     app_settings = AppSettings(
@@ -107,37 +122,34 @@ async def main() -> None:
         ),
     )
 
+    print(app_settings.model_dump_json())
+
     # Inject Gemini API Key
     if app_settings.agent and app_settings.agent.gemini_api_key:
         api_key = app_settings.agent.gemini_api_key.get_secret_value()
         os.environ["GOOGLE_API_KEY"] = api_key
 
     # Create ADK agent with tool access.
-    pdf_agent_instruction = (
-        "You are a PDF extraction agent. "
-        "Independently read PDFs using tools and return ONLY JSON matching this "
-        "schema:\n"
-        "{\n"
-        '  "template_name": string,\n'
-        '  "fields": [ {"field_name": string, "value": string|null}, ... ]\n'
-        "}\n"
-        "- Always call read_pdf_text with the provided file path.\n"
-        "- Use ONLY the template JSON (field order and names) provided by the "
-        "user to decide what to extract.\n"
-        "- If a field is not found, set its value to null.\n"
-        "- Do not include prose or explanations. Reply with a single JSON object only."
-    )
-
-    # Construct the Agent instance using the imported tool and settings
-    pdf_agent = Agent(
+    agent = Agent(
         name="flare_pdf_agent",
         model=app_settings.agent.gemini_model,
         tools=[read_pdf_text_tool],
-        instruction=pdf_agent_instruction,
+        instruction=SYSTEM_INSTRUCTION,
         generate_content_config=types.GenerateContentConfig(
             temperature=0.0, top_k=1, top_p=0.3, candidate_count=1
         ),
     )
+
+    kit = FlareAIKit(config=app_settings)
+
+    # Deterministic parsing
+    parsed = kit.pdf_processor.process_pdf(
+        file_path=str(pdf_path), template_name=template.template_name
+    )
+
+    # Agent parsing
+    result = await run_extraction_agent(agent, pdf_path, template)
+    logger.info("agent_success", extracted_fields=result["fields"])
 
     # Mock onchain contract posting
     with (
@@ -149,17 +161,8 @@ async def main() -> None:
         patch("flare_ai_kit.onchain.contract_poster.open", mock_open(read_data="[]")),
     ):
         kit = FlareAIKit(config=app_settings)
-        tx_hash = await kit.pdf_processor.ingest_and_post(
-            file_path=str(pdf_path), template_name=template.template_name
-        )
-        print("✅ on-chain tx:", tx_hash)
-        print("📄 extracted:", mock_post.call_args[0][0])
-
-    # Agent PDF parsing
-    structured = await parse_pdf_to_template_json(
-        pdf_agent, pdf_path, template, max_pages=1
-    )
-    print("🧩 agent JSON:", json.dumps(structured, indent=2))
+        tx_hash = await kit.pdf_processor.contract_poster.post_data(parsed)
+        logger.info("posted onchain", tx_hash=tx_hash, args=mock_post.call_args[0][0])
 
 
 if __name__ == "__main__":

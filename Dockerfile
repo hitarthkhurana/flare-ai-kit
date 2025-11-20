@@ -1,7 +1,8 @@
 # Parametric Dockerfile for running scripts with specific extras
 # Usage:
 #   docker build -t fai-script-pdf --build-arg EXTRAS=pdf --build-arg SCRIPT=ingest_pdf.py .
-#   docker run --rm -it -v "$PWD/data:/app/scripts/data" fai-script-pdf
+#
+#   docker run --rm -it -v "$PWD/scripts/data:/app/scripts/data" --env-file ".env" fai-script-pdf
 
 # Build arguments for parametric behavior
 ARG EXTRAS=""
@@ -20,23 +21,21 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies for PDF processing (if needed)
+# Install system dependencies for PDF processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first for better caching
+# Copy dependency files first
 COPY uv.lock pyproject.toml ./
 
 # Install dependencies based on EXTRAS parameter
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -n "$EXTRAS" ]; then \
         echo "Installing with extras: $EXTRAS"; \
-        # Convert comma-separated extras to space-separated for uv
         EXTRAS_ARGS=$(echo "$EXTRAS" | sed 's/,/ --extra /g'); \
-        echo "Installing extras: $EXTRAS_ARGS"; \
         uv sync --locked --no-install-project --extra $EXTRAS_ARGS --no-dev --no-editable; \
     else \
         echo "Installing base dependencies only"; \
@@ -49,9 +48,7 @@ COPY . /app
 # Install the project itself
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -n "$EXTRAS" ]; then \
-        # Convert comma-separated extras to space-separated for uv
         EXTRAS_ARGS=$(echo "$EXTRAS" | sed 's/,/ --extra /g'); \
-        echo "Installing project with extras: $EXTRAS_ARGS"; \
         uv sync --locked --extra $EXTRAS_ARGS --no-dev --no-editable; \
     else \
         uv sync --locked --no-dev --no-editable; \
@@ -67,7 +64,7 @@ FROM python:3.12-slim-bookworm AS runtime
 ARG EXTRAS
 ARG SCRIPT
 
-# Install runtime system dependencies for PDF processing (if needed)
+# Install runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -76,7 +73,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PIP_NO_CACHE_DIR=1 \
     UV_PYTHON_DOWNLOADS=0 \
-    SCRIPT_NAME="$SCRIPT"
+    SCRIPT_NAME="$SCRIPT" \
+    PYTHONPATH="/app/scripts:/app:$PYTHONPATH"
 
 # Create non-root user
 RUN groupadd -r app && \
@@ -96,4 +94,4 @@ USER app
 RUN test -f "/app/scripts/$SCRIPT" || (echo "Error: Script /app/scripts/$SCRIPT not found" && exit 1)
 
 # Default command runs the specified script
-CMD ["sh", "-c", "cd /app/scripts && python \"$SCRIPT_NAME\""]
+CMD ["sh", "-c", "python \"/app/scripts/$SCRIPT_NAME\""]
