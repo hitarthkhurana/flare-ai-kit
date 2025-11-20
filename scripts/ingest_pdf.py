@@ -10,13 +10,14 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, mock_open, patch
 
 import structlog
+
+# Import from local data directory
+from data.create_sample_invoice import create_invoice_and_build_template
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-# Import from local data directory
-from data.create_sample_invoice import create_invoice_and_build_template
 from flare_ai_kit import FlareAIKit
 from flare_ai_kit.agent.pdf_tools import read_pdf_text_tool
 from flare_ai_kit.config import AppSettings
@@ -77,13 +78,13 @@ async def run_extraction_agent(
 ) -> dict[str, Any]:
     """Setup in-memory ADK agent, give it the PDF, template and prompt."""
     svc = InMemorySessionService()
-    await svc.create_session(app_name="app", user_id="user", session_id="session")
-    runner = Runner(agent=agent, app_name="app", session_service=svc)
+    await svc.create_session(app_name="agents", user_id="user", session_id="session")
+    runner = Runner(agent=agent, app_name="agents", session_service=svc)
 
     prompt = build_prompt(pdf, template, max_pages=1)
     message = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    logger.info("invoking_agent", model=agent.model)
+    logger.info("calling agent", model=agent.model)
 
     final_text = ""
     async for event in runner.run_async(
@@ -122,7 +123,8 @@ async def main() -> None:
         ),
     )
 
-    print(app_settings.model_dump_json())
+    # Secrets will remain hidden
+    logger.info("settings", config=app_settings.model_dump())
 
     # Inject Gemini API Key
     if app_settings.agent and app_settings.agent.gemini_api_key:
@@ -146,10 +148,11 @@ async def main() -> None:
     parsed = kit.pdf_processor.process_pdf(
         file_path=str(pdf_path), template_name=template.template_name
     )
+    logger.info("deterministic parsed", parsed=parsed)
 
     # Agent parsing
     result = await run_extraction_agent(agent, pdf_path, template)
-    logger.info("agent_success", extracted_fields=result["fields"])
+    logger.info("agent parsed", result=result)
 
     # Mock onchain contract posting
     with (
