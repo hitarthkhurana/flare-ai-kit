@@ -1,7 +1,5 @@
 """Module providing access to the Flare ecosystem components."""
 
-from .explorer import BlockExplorer
-from .flare import Flare
-from .protocols import DataAvailabilityLayer, FAssets, FtsoV2
+from .settings import EcosystemSettings
 
-__all__ = ["BlockExplorer", "DataAvailabilityLayer", "FAssets", "Flare", "FtsoV2"]
+__all__ = ["EcosystemSettings"]

@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -838,15 +838,12 @@ dependencies = [
 a2a = [
     { name = "fastapi", extra = ["standard"] },
 ]
-ingestion = [
-    { name = "pillow" },
-    { name = "pymupdf" },
-    { name = "pytesseract" },
-]
 pdf = [
+    { name = "dulwich" },
     { name = "pillow" },
     { name = "pymupdf" },
     { name = "pytesseract" },
+    { name = "reportlab" },
 ]
 rag = [
     { name = "dulwich" },
@@ -878,7 +875,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-mock" },
-    { name = "reportlab" },
     { name = "ruff" },
     { name = "settings-doc" },
 ]
@@ -889,6 +885,7 @@ requires-dist = [
     { name = "cryptography", marker = "extra == 'tee'", specifier = ">=44.0.2" },
     { name = "cryptography", marker = "extra == 'wallet'", specifier = ">=44.0.2" },
     { name = "discord-py", marker = "extra == 'social'", specifier = ">=2.3.2" },
+    { name = "dulwich", marker = "extra == 'pdf'", specifier = ">=0.23.2" },
     { name = "dulwich", marker = "extra == 'rag'", specifier = ">=0.23.2" },
     { name = "eth-account", marker = "extra == 'wallet'", specifier = ">=0.13.0" },
     { name = "fastapi", extras = ["standard"], marker = "extra == 'a2a'", specifier = ">=0.116.1" },
@@ -897,26 +894,24 @@ requires-dist = [
     { name = "google-genai", specifier = ">=1.8.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx", marker = "extra == 'wallet'", specifier = ">=0.28.1" },
-    { name = "pillow", marker = "extra == 'ingestion'", specifier = ">=11.3.0" },
     { name = "pillow", marker = "extra == 'pdf'", specifier = ">=11.3.0" },
     { name = "pydantic", specifier = ">=2.11.1" },
     { name = "pydantic-ai", specifier = ">=0.0.46" },
     { name = "pyjwt", marker = "extra == 'tee'", specifier = ">=2.10.1" },
     { name = "pyjwt", marker = "extra == 'wallet'", specifier = ">=2.10.1" },
-    { name = "pymupdf", marker = "extra == 'ingestion'", specifier = ">=1.26.1" },
     { name = "pymupdf", marker = "extra == 'pdf'", specifier = ">=1.26.1" },
     { name = "pyopenssl", marker = "extra == 'tee'", specifier = ">=25.0.0" },
-    { name = "pytesseract", marker = "extra == 'ingestion'", specifier = ">=0.3.13" },
     { name = "pytesseract", marker = "extra == 'pdf'", specifier = ">=0.3.13" },
     { name = "python-telegram-bot", marker = "extra == 'social'", specifier = ">=22.0" },
     { name = "qdrant-client", marker = "extra == 'rag'", specifier = ">=1.13.3" },
+    { name = "reportlab", marker = "extra == 'pdf'", specifier = ">=4.2.0" },
     { name = "slack-sdk", marker = "extra == 'social'", specifier = ">=3.26.2" },
     { name = "structlog", specifier = ">=25.2.0" },
     { name = "tenacity", specifier = ">=8.2.3,<9.0.0" },
     { name = "tweepy", marker = "extra == 'social'", specifier = ">=4.15.0" },
     { name = "web3", specifier = ">=7.10.0" },
 ]
-provides-extras = ["ftso", "da", "fassets", "pdf", "rag", "a2a", "social", "tee", "wallet", "ingestion"]
+provides-extras = ["ftso", "da", "fassets", "pdf", "rag", "a2a", "social", "tee", "wallet"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -925,7 +920,6 @@ dev = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "reportlab", specifier = ">=4.2.0" },
     { name = "ruff", specifier = ">=0.11.2" },
     { name = "settings-doc", specifier = ">=4.3.2" },
 ]

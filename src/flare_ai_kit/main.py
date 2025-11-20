@@ -1,17 +1,22 @@
 """Entry point for Flare AI Kit SDK."""
 
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 
 import structlog
 
-from .a2a import A2AClient
 from .config import AppSettings
-from .ecosystem import BlockExplorer, FAssets, Flare, FtsoV2
-from .ingestion import GithubIngestor
-from .ingestion.pdf_processor import PDFProcessor
-from .onchain.contract_poster import ContractPoster
-from .rag.vector import VectorRAGPipeline, create_vector_rag_pipeline
-from .social import TelegramClient, XClient
+
+if TYPE_CHECKING:
+    from .a2a import A2AClient
+    from .ecosystem.api import BlockExplorer, FAssets, Flare, FtsoV2
+    from .ingestion.api import GithubIngestor
+    from .ingestion.pdf_processor import PDFProcessor
+    from .rag.vector.api import VectorRAGPipeline
+    from .social.api import TelegramClient, XClient
+
 
 logger = structlog.get_logger(__name__)
 
@@ -50,6 +55,8 @@ class FlareAIKit:
     @property
     def flare(self) -> Flare:
         """Access Flare blockchain interaction methods."""
+        from .ecosystem.api import Flare  # noqa: PLC0415
+
         if self._flare is None:
             self._flare = Flare(self.settings.ecosystem)
         return self._flare
@@ -57,7 +64,8 @@ class FlareAIKit:
     @property
     async def ftso(self) -> FtsoV2:
         """Access FTSOv2 price oracle methods."""
-        # Note the async nature of the property now
+        from .ecosystem.api import FtsoV2  # noqa: PLC0415
+
         if self._ftso is None:
             self._ftso = await FtsoV2.create(self.settings.ecosystem)
         return self._ftso
@@ -65,6 +73,8 @@ class FlareAIKit:
     @property
     async def fassets(self) -> FAssets:
         """Access FAssets protocol methods."""
+        from .ecosystem.api import FAssets  # noqa: PLC0415
+
         if self._fassets is None:
             self._fassets = await FAssets.create(self.settings.ecosystem)
         return self._fassets
@@ -72,6 +82,8 @@ class FlareAIKit:
     @property
     def block_explorer(self) -> BlockExplorer:
         """Access the block explorer methods."""
+        from .ecosystem.api import BlockExplorer  # noqa: PLC0415
+
         if self._block_explorer is None:
             self._block_explorer = BlockExplorer(self.settings.ecosystem)
         return self._block_explorer
@@ -80,6 +92,8 @@ class FlareAIKit:
     @property
     def telegram(self) -> TelegramClient:
         """Access Telegram client methods."""
+        from .social.api import TelegramClient  # noqa: PLC0415
+
         if self._telegram is None:
             self._telegram = TelegramClient(self.settings.social)
         return self._telegram
@@ -87,6 +101,8 @@ class FlareAIKit:
     @property
     def x_client(self) -> XClient:
         """Access X (formerly Twitter) client methods."""
+        from .social.api import XClient  # noqa: PLC0415
+
         if self._x_client is None:
             self._x_client = XClient(self.settings.social)
         return self._x_client
@@ -95,6 +111,8 @@ class FlareAIKit:
     @property
     def vector_rag(self) -> VectorRAGPipeline:
         """Access the RAG retriever."""
+        from .rag.vector.api import create_vector_rag_pipeline  # noqa: PLC0415
+
         if self._vector_rag is None:
             self._vector_rag = create_vector_rag_pipeline(
                 vector_db_settings=self.settings.vector_db,
@@ -105,6 +123,8 @@ class FlareAIKit:
     @property
     def github_ingestor(self) -> GithubIngestor:
         """Access the GitHub ingestor methods."""
+        from .ingestion.api import GithubIngestor  # noqa: PLC0415
+
         if self._github_ingestor is None:
             self._github_ingestor = GithubIngestor(self.settings.ingestion)
         return self._github_ingestor
@@ -112,6 +132,9 @@ class FlareAIKit:
     @property
     def pdf_processor(self) -> PDFProcessor:
         """Access the PDF ingestion and on-chain posting service."""
+        from .ingestion.pdf_processor import PDFProcessor  # noqa: PLC0415
+        from .onchain.contract_poster import ContractPoster  # noqa: PLC0415
+
         if self._pdf_processor is None:
             if not self.settings.ingestion or not self.settings.ingestion.pdf_ingestion:
                 msg = "PDF ingestion settings are not configured."
@@ -131,6 +154,8 @@ class FlareAIKit:
     @property
     def a2a_client(self) -> A2AClient:
         """Access the A2A client with optional db path."""
+        from .a2a import A2AClient  # noqa: PLC0415
+
         if self._a2a_client is None:
             self._a2a_client = A2AClient(settings=self.settings.a2a)
         return self._a2a_client

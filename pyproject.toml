@@ -60,7 +60,9 @@ fassets = [
 pdf = [
     "pillow>=11.3.0",
     "pymupdf>=1.26.1",
-    "pytesseract>=0.3.13"
+    "pytesseract>=0.3.13",
+    "reportlab>=4.2.0",
+    "dulwich>=0.23.2"
 ]
 rag = [
     "qdrant-client>=1.13.3",
@@ -88,11 +90,6 @@ wallet = [
     "eth-account>=0.13.0",
     "pyjwt>=2.10.1",
 ]
-ingestion = [
-    "pillow>=11.3.0",
-    "pymupdf>=1.26.1",
-    "pytesseract>=0.3.13"
-]
 
 [build-system]
 requires = ["hatchling"]
@@ -106,7 +103,6 @@ dev = [
     "pytest-mock>=3.14.0",
     "ruff>=0.11.2",
     "settings-doc>=4.3.2",
-    "reportlab>=4.2.0",
     "gitpython>=3.1.45",
 ]
 
