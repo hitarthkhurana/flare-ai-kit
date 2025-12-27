@@ -138,3 +138,13 @@ class A2AClientError(FlareAIKitError):
 # --- PDF Processing Errors ---
 class PdfPostingError(FlareAIKitError):
     """Error class concerned with onchain PDF data posting errors."""
+
+
+# --- SparkDEX Errors ---
+class SparkDEXError(FlareAIKitError):
+    """Base exception for errors related to SparkDEX protocol interactions."""
+
+
+# --- Cyclo Errors ---
+class CycloError(FlareAIKitError):
+    """Base exception for errors related to Cyclo protocol interactions."""
