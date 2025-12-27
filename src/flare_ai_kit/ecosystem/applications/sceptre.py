@@ -80,19 +80,25 @@ class Sceptre(Flare):
 
         logger.info("Staking FLR to receive sFLR", amount_wei=amount)
 
-        # Build transaction for submit() function (payable)
-        tx = self.sflr_contract.functions.submit().build_transaction(
-            {
-                "from": self.account_address,
-                "value": amount,  # FLR amount to send
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        # Build the function call with value for payable function
+        function_call = self.sflr_contract.functions.submit()
+        
+        # Build transaction using base class (handles gas, nonce, etc.)
+        tx = await self.build_transaction(function_call, self.address, value=amount)
+        
+        if not tx:
+            msg = "Failed to build stake transaction"
+            raise SceptreError(msg)
 
         # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("FLR staked successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send stake transaction"
+            raise SceptreError(msg)
+            
+        logger.info("FLR staked successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def get_sflr_balance(self, address: ChecksumAddress) -> int:
         """
@@ -116,7 +122,7 @@ class Sceptre(Flare):
             msg = "Sceptre contract not initialized"
             raise SceptreError(msg)
 
-        balance = self.sflr_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        balance = await self.sflr_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("sFLR balance retrieved", address=address, balance=balance)
         return int(balance)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -139,7 +145,7 @@ class Sceptre(Flare):
             msg = "Sceptre contract not initialized"
             raise SceptreError(msg)
 
-        total = self.sflr_contract.functions.getTotalPooledFlr().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        total = await self.sflr_contract.functions.getTotalPooledFlr().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Total pooled FLR retrieved", total=total)
         return int(total)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -165,7 +171,7 @@ class Sceptre(Flare):
             msg = "Sceptre contract not initialized"
             raise SceptreError(msg)
 
-        flr_amount = self.sflr_contract.functions.getPooledFlrByShares(shares).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        flr_amount = await self.sflr_contract.functions.getPooledFlrByShares(shares).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Converted shares to FLR", shares=shares, flr_amount=flr_amount)
         return int(flr_amount)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -191,7 +197,7 @@ class Sceptre(Flare):
             msg = "Sceptre contract not initialized"
             raise SceptreError(msg)
 
-        shares = self.sflr_contract.functions.getSharesByPooledFlr(flr_amount).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        shares = await self.sflr_contract.functions.getSharesByPooledFlr(flr_amount).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Converted FLR to shares", flr_amount=flr_amount, shares=shares)
         return int(shares)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -218,16 +224,21 @@ class Sceptre(Flare):
 
         logger.info("Requesting withdrawal", amount_wei=amount)
 
-        tx = self.sflr_contract.functions.requestWithdrawal(amount).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.sflr_contract.functions.requestWithdrawal(amount)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build withdrawal request transaction"
+            raise SceptreError(msg)
 
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("Withdrawal requested", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send withdrawal request transaction"
+            raise SceptreError(msg)
+            
+        logger.info("Withdrawal requested", tx_hash=tx_hash)
+        return tx_hash
 
     async def claim_withdrawal(self, request_id: int) -> str:
         """
@@ -252,14 +263,19 @@ class Sceptre(Flare):
 
         logger.info("Claiming withdrawal", request_id=request_id)
 
-        tx = self.sflr_contract.functions.claimWithdrawal(request_id).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.sflr_contract.functions.claimWithdrawal(request_id)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build claim withdrawal transaction"
+            raise SceptreError(msg)
 
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("Withdrawal claimed", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send claim withdrawal transaction"
+            raise SceptreError(msg)
+            
+        logger.info("Withdrawal claimed", tx_hash=tx_hash)
+        return tx_hash
 

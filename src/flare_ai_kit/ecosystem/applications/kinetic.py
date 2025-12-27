@@ -80,18 +80,21 @@ class Kinetic(Flare):
 
         logger.info("Supplying sFLR to Kinetic", amount_wei=amount)
 
-        # Build transaction for mint() function
-        tx = self.ksflr_contract.functions.mint(amount).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.ksflr_contract.functions.mint(amount)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build supply transaction"
+            raise KineticError(msg)
 
-        # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("sFLR supplied successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send supply transaction"
+            raise KineticError(msg)
+            
+        logger.info("sFLR supplied successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def redeem(self, amount: int) -> str:
         """
@@ -116,18 +119,21 @@ class Kinetic(Flare):
 
         logger.info("Redeeming ksFLR from Kinetic", amount_wei=amount)
 
-        # Build transaction for redeem() function
-        tx = self.ksflr_contract.functions.redeem(amount).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.ksflr_contract.functions.redeem(amount)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build redeem transaction"
+            raise KineticError(msg)
 
-        # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("ksFLR redeemed successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send redeem transaction"
+            raise KineticError(msg)
+            
+        logger.info("ksFLR redeemed successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def get_balance(self, address: ChecksumAddress) -> int:
         """
@@ -151,7 +157,7 @@ class Kinetic(Flare):
             msg = "Kinetic contract not initialized"
             raise KineticError(msg)
 
-        balance = self.ksflr_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        balance = await self.ksflr_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("ksFLR balance retrieved", address=address, balance=balance)
         return int(balance)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -178,7 +184,7 @@ class Kinetic(Flare):
             raise KineticError(msg)
 
         # Note: balanceOfUnderlying is not a pure view function in Compound
-        balance = self.ksflr_contract.functions.balanceOfUnderlying(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        balance = await self.ksflr_contract.functions.balanceOfUnderlying(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug(
             "Underlying sFLR balance retrieved", address=address, balance=balance
         )
@@ -203,7 +209,7 @@ class Kinetic(Flare):
             msg = "Kinetic contract not initialized"
             raise KineticError(msg)
 
-        rate = self.ksflr_contract.functions.exchangeRateCurrent().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        rate = await self.ksflr_contract.functions.exchangeRateCurrent().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Exchange rate retrieved", rate=rate)
         return int(rate)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -226,6 +232,6 @@ class Kinetic(Flare):
             msg = "Kinetic contract not initialized"
             raise KineticError(msg)
 
-        rate = self.ksflr_contract.functions.supplyRatePerTimestamp().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        rate = await self.ksflr_contract.functions.supplyRatePerTimestamp().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Supply rate retrieved", rate=rate)
         return int(rate)  # pyright: ignore[reportUnknownArgumentType]

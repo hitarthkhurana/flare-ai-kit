@@ -121,7 +121,16 @@ class Cyclo(Flare):
             )
 
             # Execute the transaction
-            tx_hash: str = await self._build_sign_send_tx(function_call)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+            tx = await self.build_transaction(function_call, self.address)
+            if not tx:
+                msg = "Failed to build deposit transaction"
+                raise CycloError(msg)
+                
+            tx_hash = await self.sign_and_send_transaction(tx)
+            if not tx_hash:
+                msg = "Failed to send deposit transaction"
+                raise CycloError(msg)
+                
             logger.info("sFLR deposit successful", tx_hash=tx_hash)
             return tx_hash  # noqa: TRY300
 
@@ -174,7 +183,16 @@ class Cyclo(Flare):
             )
 
             # Execute the transaction
-            tx_hash: str = await self._build_sign_send_tx(function_call)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+            tx = await self.build_transaction(function_call, self.address)
+            if not tx:
+                msg = "Failed to build redeem transaction"
+                raise CycloError(msg)
+                
+            tx_hash = await self.sign_and_send_transaction(tx)
+            if not tx_hash:
+                msg = "Failed to send redeem transaction"
+                raise CycloError(msg)
+                
             logger.info("sFLR redemption successful", tx_hash=tx_hash)
             return tx_hash  # noqa: TRY300
 

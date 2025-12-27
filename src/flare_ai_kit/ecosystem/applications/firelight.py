@@ -46,7 +46,7 @@ class Firelight(Flare):
         try:
             instance.vault_contract = instance.w3.eth.contract(
                 address=instance.w3.to_checksum_address(cls.STXRP_VAULT),
-                abi=load_abi("FirelightVault"),
+                abi=load_abi("FirelightVault_Implementation"),  # Use implementation ABI
             )
             logger.debug(
                 "Firelight stXRP vault initialized", contract_address=cls.STXRP_VAULT
@@ -80,20 +80,21 @@ class Firelight(Flare):
 
         logger.info("Staking FXRP to Firelight", amount_wei=amount)
 
-        # Build transaction for deposit() function
-        tx = self.vault_contract.functions.deposit(
-            amount, self.account_address
-        ).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.vault_contract.functions.deposit(amount, self.address)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build stake transaction"
+            raise FirelightError(msg)
 
-        # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("FXRP staked successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send stake transaction"
+            raise FirelightError(msg)
+            
+        logger.info("FXRP staked successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def request_withdrawal(self, amount: int) -> str:
         """
@@ -118,20 +119,23 @@ class Firelight(Flare):
 
         logger.info("Requesting FXRP withdrawal", amount_wei=amount)
 
-        # Build transaction for withdraw() function
-        tx = self.vault_contract.functions.withdraw(
-            amount, self.account_address, self.account_address
-        ).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
+        function_call = self.vault_contract.functions.withdraw(
+            amount, self.address, self.address
         )
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build withdrawal request transaction"
+            raise FirelightError(msg)
 
-        # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("Withdrawal requested successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send withdrawal request transaction"
+            raise FirelightError(msg)
+            
+        logger.info("Withdrawal requested successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def claim_withdrawal(self, period: int) -> str:
         """
@@ -157,18 +161,21 @@ class Firelight(Flare):
 
         logger.info("Claiming withdrawal", period=period)
 
-        # Build transaction for claimWithdraw() function
-        tx = self.vault_contract.functions.claimWithdraw(period).build_transaction(
-            {
-                "from": self.account_address,
-                "nonce": self.w3.eth.get_transaction_count(self.account_address),
-            }
-        )
+        function_call = self.vault_contract.functions.claimWithdraw(period)
+        tx = await self.build_transaction(function_call, self.address)
+        
+        if not tx:
+            msg = "Failed to build claim withdrawal transaction"
+            raise FirelightError(msg)
 
-        # Sign and send transaction
-        tx_hash = await self._build_sign_send_tx(tx)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-        logger.info("Withdrawal claimed successfully", tx_hash=tx_hash.hex())
-        return tx_hash.hex()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        tx_hash = await self.sign_and_send_transaction(tx)
+        
+        if not tx_hash:
+            msg = "Failed to send claim withdrawal transaction"
+            raise FirelightError(msg)
+            
+        logger.info("Withdrawal claimed successfully", tx_hash=tx_hash)
+        return tx_hash
 
     async def get_stxrp_balance(self, address: ChecksumAddress) -> int:
         """
@@ -192,7 +199,7 @@ class Firelight(Flare):
             msg = "Firelight vault contract not initialized"
             raise FirelightError(msg)
 
-        balance = self.vault_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        balance = await self.vault_contract.functions.balanceOf(address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("stXRP balance retrieved", address=address, balance=balance)
         return int(balance)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -215,7 +222,7 @@ class Firelight(Flare):
             msg = "Firelight vault contract not initialized"
             raise FirelightError(msg)
 
-        total = self.vault_contract.functions.totalAssets().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        total = await self.vault_contract.functions.totalAssets().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Total assets retrieved", total=total)
         return int(total)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -238,7 +245,7 @@ class Firelight(Flare):
             msg = "Firelight vault contract not initialized"
             raise FirelightError(msg)
 
-        period = self.vault_contract.functions.currentPeriod().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        period = await self.vault_contract.functions.currentPeriod().call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug("Current period retrieved", period=period)
         return int(period)  # pyright: ignore[reportUnknownArgumentType]
 
@@ -267,7 +274,7 @@ class Firelight(Flare):
             msg = "Firelight vault contract not initialized"
             raise FirelightError(msg)
 
-        amount = self.vault_contract.functions.withdrawalsOf(period, address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        amount = await self.vault_contract.functions.withdrawalsOf(period, address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug(
             "Pending withdrawal retrieved",
             period=period,
