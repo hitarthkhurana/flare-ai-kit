@@ -4,6 +4,7 @@ import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 from flare_ai_kit.common import CycloError
 from flare_ai_kit.ecosystem.applications.cyclo import Cyclo
@@ -25,7 +26,7 @@ def mock_w3():
     return mock
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def cyclo_connector(settings, mock_w3):
     """Create Cyclo connector with mocked dependencies."""
     with (
@@ -69,10 +70,16 @@ async def test_deposit_sflr_success(cyclo_connector, mock_w3):
     )
     mock_tx_hash = "0xabc123def456"
 
-    with patch.object(
-        cyclo_connector, "_build_sign_send_tx", new_callable=AsyncMock
-    ) as mock_build_sign_send:
-        mock_build_sign_send.return_value = mock_tx_hash
+    with (
+        patch.object(
+            cyclo_connector, "build_transaction", new_callable=AsyncMock
+        ) as mock_build,
+        patch.object(
+            cyclo_connector, "sign_and_send_transaction", new_callable=AsyncMock
+        ) as mock_sign_send,
+    ):
+        mock_build.return_value = {"from": "0x123"}
+        mock_sign_send.return_value = mock_tx_hash
 
         # Execute
         result = await cyclo_connector.deposit_sflr(
@@ -84,7 +91,8 @@ async def test_deposit_sflr_success(cyclo_connector, mock_w3):
         # Verify
         assert result == mock_tx_hash
         cyclo_connector.vault_contract.functions.deposit.assert_called_once()
-        mock_build_sign_send.assert_awaited_once()
+        mock_build.assert_awaited_once()
+        mock_sign_send.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -109,10 +117,16 @@ async def test_redeem_sflr_success(cyclo_connector, mock_w3):
     )
     mock_tx_hash = "0xdef789ghi012"
 
-    with patch.object(
-        cyclo_connector, "_build_sign_send_tx", new_callable=AsyncMock
-    ) as mock_build_sign_send:
-        mock_build_sign_send.return_value = mock_tx_hash
+    with (
+        patch.object(
+            cyclo_connector, "build_transaction", new_callable=AsyncMock
+        ) as mock_build,
+        patch.object(
+            cyclo_connector, "sign_and_send_transaction", new_callable=AsyncMock
+        ) as mock_sign_send,
+    ):
+        mock_build.return_value = {"from": "0x123"}
+        mock_sign_send.return_value = mock_tx_hash
 
         # Execute
         result = await cyclo_connector.redeem_sflr(
@@ -125,7 +139,8 @@ async def test_redeem_sflr_success(cyclo_connector, mock_w3):
         # Verify
         assert result == mock_tx_hash
         cyclo_connector.vault_contract.functions.redeem.assert_called_once()
-        mock_build_sign_send.assert_awaited_once()
+        mock_build.assert_awaited_once()
+        mock_sign_send.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -232,4 +247,3 @@ async def test_get_vault_asset_no_vault_contract(cyclo_connector):
 
     with pytest.raises(CycloError, match="vault contract not initialized"):
         await cyclo_connector.get_vault_asset()
-

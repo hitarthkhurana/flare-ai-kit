@@ -210,19 +210,21 @@ class Flare:
         from_addr: ChecksumAddress,
         value: int = 0,
     ) -> TxParams | None:
-        """Builds a transaction with dynamic gas and nonce parameters.
-        
+        """
+        Builds a transaction with dynamic gas and nonce parameters.
+
         Args:
             function_call: The contract function call to build a transaction for
             from_addr: The sender's checksummed address
             value: Amount of native token (wei) to send with the transaction
-            
+
         Returns:
             Transaction parameters dictionary
+
         """
         base_tx = await self._prepare_base_tx_params(from_addr)
         if value > 0:
-            base_tx["value"] = value
+            base_tx["value"] = value  # pyright: ignore[reportGeneralTypeIssues]
         # Let web3.py handle gas estimation within build_transaction if not provided
         tx = await function_call.build_transaction(base_tx)
         logger.debug("Transaction built successfully", tx=tx)

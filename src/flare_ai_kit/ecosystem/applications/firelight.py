@@ -44,7 +44,7 @@ class Firelight(Flare):
         instance = cls(settings)
         logger.info("Initializing Firelight stXRP vault...")
         try:
-            instance.vault_contract = instance.w3.eth.contract(
+            instance.vault_contract = instance.w3.eth.contract(  # pyright: ignore[reportAttributeAccessIssue]
                 address=instance.w3.to_checksum_address(cls.STXRP_VAULT),
                 abi=load_abi("FirelightVault_Implementation"),  # Use implementation ABI
             )
@@ -81,18 +81,18 @@ class Firelight(Flare):
         logger.info("Staking FXRP to Firelight", amount_wei=amount)
 
         function_call = self.vault_contract.functions.deposit(amount, self.address)
-        tx = await self.build_transaction(function_call, self.address)
-        
+        tx = await self.build_transaction(function_call, self.address)  # pyright: ignore[reportArgumentType]
+
         if not tx:
             msg = "Failed to build stake transaction"
             raise FirelightError(msg)
 
         tx_hash = await self.sign_and_send_transaction(tx)
-        
+
         if not tx_hash:
             msg = "Failed to send stake transaction"
             raise FirelightError(msg)
-            
+
         logger.info("FXRP staked successfully", tx_hash=tx_hash)
         return tx_hash
 
@@ -122,18 +122,18 @@ class Firelight(Flare):
         function_call = self.vault_contract.functions.withdraw(
             amount, self.address, self.address
         )
-        tx = await self.build_transaction(function_call, self.address)
-        
+        tx = await self.build_transaction(function_call, self.address)  # pyright: ignore[reportArgumentType]
+
         if not tx:
             msg = "Failed to build withdrawal request transaction"
             raise FirelightError(msg)
 
         tx_hash = await self.sign_and_send_transaction(tx)
-        
+
         if not tx_hash:
             msg = "Failed to send withdrawal request transaction"
             raise FirelightError(msg)
-            
+
         logger.info("Withdrawal requested successfully", tx_hash=tx_hash)
         return tx_hash
 
@@ -162,18 +162,18 @@ class Firelight(Flare):
         logger.info("Claiming withdrawal", period=period)
 
         function_call = self.vault_contract.functions.claimWithdraw(period)
-        tx = await self.build_transaction(function_call, self.address)
-        
+        tx = await self.build_transaction(function_call, self.address)  # pyright: ignore[reportArgumentType]
+
         if not tx:
             msg = "Failed to build claim withdrawal transaction"
             raise FirelightError(msg)
 
         tx_hash = await self.sign_and_send_transaction(tx)
-        
+
         if not tx_hash:
             msg = "Failed to send claim withdrawal transaction"
             raise FirelightError(msg)
-            
+
         logger.info("Withdrawal claimed successfully", tx_hash=tx_hash)
         return tx_hash
 
@@ -274,7 +274,9 @@ class Firelight(Flare):
             msg = "Firelight vault contract not initialized"
             raise FirelightError(msg)
 
-        amount = await self.vault_contract.functions.withdrawalsOf(period, address).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+        amount = await self.vault_contract.functions.withdrawalsOf(
+            period, address
+        ).call()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
         logger.debug(
             "Pending withdrawal retrieved",
             period=period,

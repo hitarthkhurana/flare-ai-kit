@@ -1,6 +1,6 @@
 """Unit tests for Kinetic connector."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -50,17 +50,17 @@ async def test_get_balance(settings):
 
         kinetic = await Kinetic.create(settings)
 
-        # Mock balance query
-        mock_balance = 5 * 10**18
-        kinetic.ksflr_contract.functions.balanceOf = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_balance))
-        )
+    # Mock balance query
+    mock_balance = 5 * 10**18
+    kinetic.ksflr_contract.functions.balanceOf = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_balance))
+    )
 
-        # Get balance
-        balance = await kinetic.get_balance("0x123")
+    # Get balance
+    balance = await kinetic.get_balance("0x123")
 
-        # Verify
-        assert balance == mock_balance
+    # Verify
+    assert balance == mock_balance
 
 
 @pytest.mark.asyncio
@@ -77,17 +77,17 @@ async def test_get_underlying_balance(settings):
 
         kinetic = await Kinetic.create(settings)
 
-        # Mock underlying balance
-        mock_balance = 5 * 10**18
-        kinetic.ksflr_contract.functions.balanceOfUnderlying = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_balance))
-        )
+    # Mock underlying balance
+    mock_balance = 5 * 10**18
+    kinetic.ksflr_contract.functions.balanceOfUnderlying = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_balance))
+    )
 
-        # Get balance
-        balance = await kinetic.get_underlying_balance("0x123")
+    # Get balance
+    balance = await kinetic.get_underlying_balance("0x123")
 
-        # Verify
-        assert balance == mock_balance
+    # Verify
+    assert balance == mock_balance
 
 
 @pytest.mark.asyncio
@@ -104,17 +104,17 @@ async def test_get_exchange_rate(settings):
 
         kinetic = await Kinetic.create(settings)
 
-        # Mock exchange rate (e.g., 1 ksFLR = 1.05 sFLR)
-        mock_rate = int(1.05 * 10**18)
-        kinetic.ksflr_contract.functions.exchangeRateCurrent = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_rate))
-        )
+    # Mock exchange rate (e.g., 1 ksFLR = 1.05 sFLR)
+    mock_rate = int(1.05 * 10**18)
+    kinetic.ksflr_contract.functions.exchangeRateCurrent = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_rate))
+    )
 
-        # Get rate
-        rate = await kinetic.get_exchange_rate()
+    # Get rate
+    rate = await kinetic.get_exchange_rate()
 
-        # Verify
-        assert rate == mock_rate
+    # Verify
+    assert rate == mock_rate
 
 
 @pytest.mark.asyncio
@@ -131,17 +131,16 @@ async def test_get_supply_rate(settings):
 
         kinetic = await Kinetic.create(settings)
 
-        # Mock supply rate - need to mock the actual functions attribute
-        mock_rate = 12345
-        mock_functions = MagicMock()
-        mock_functions.supplyRatePerTimestamp = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_rate))
-        )
-        kinetic.ksflr_contract.functions = mock_functions
+    # Mock supply rate - need to mock the actual functions attribute
+    mock_rate = 12345
+    mock_functions = MagicMock()
+    mock_functions.supplyRatePerTimestamp = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_rate))
+    )
+    kinetic.ksflr_contract.functions = mock_functions
 
-        # Get rate
-        rate = await kinetic.get_supply_rate()
+    # Get rate
+    rate = await kinetic.get_supply_rate()
 
-        # Verify
-        assert rate == mock_rate
-
+    # Verify
+    assert rate == mock_rate

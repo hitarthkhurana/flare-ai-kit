@@ -58,9 +58,7 @@ async def cyclo_leverage_example() -> None:
         # Check receipt balance for a specific ID (price at deposit time)
         # In reality, you'd track the receipt ID from the deposit event
         example_receipt_id = 15000000000000000000  # Example: 0.015 USD per sFLR
-        receipt_balance = await cyclo.get_receipt_balance(
-            recipient, example_receipt_id
-        )
+        receipt_balance = await cyclo.get_receipt_balance(recipient, example_receipt_id)
         print(f"   Receipt NFT balance (ID {example_receipt_id}): {receipt_balance}")
 
     except Exception as e:
@@ -110,4 +108,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

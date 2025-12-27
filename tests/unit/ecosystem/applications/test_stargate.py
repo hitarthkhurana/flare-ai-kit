@@ -116,10 +116,7 @@ async def test_get_bridge_info(settings):
 
         assert info["network"] == "Flare"
         assert info["endpoint_id"] == 30295
-        assert (
-            info["token_messaging"] == "0x45d417612e177672958dC0537C45a8f8d754Ac2E"
-        )
+        assert info["token_messaging"] == "0x45d417612e177672958dC0537C45a8f8d754Ac2E"
         assert info["treasurer"] == "0x090194F1EEDc134A680e3b488aBB2D212dba8c01"
         assert "ETH" in info["supported_tokens"]
         assert "arbitrum" in info["supported_chains"]
-

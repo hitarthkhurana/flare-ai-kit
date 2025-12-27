@@ -1,6 +1,6 @@
 """Unit tests for Sceptre connector."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -47,17 +47,17 @@ async def test_get_sflr_balance(settings):
 
         sceptre = await Sceptre.create(settings)
 
-        # Mock balance query
-        mock_balance = 5 * 10**18
-        sceptre.sflr_contract.functions.balanceOf = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_balance))
-        )
+    # Mock balance query
+    mock_balance = 5 * 10**18
+    sceptre.sflr_contract.functions.balanceOf = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_balance))
+    )
 
-        # Get balance
-        balance = await sceptre.get_sflr_balance("0x123")
+    # Get balance
+    balance = await sceptre.get_sflr_balance("0x123")
 
-        # Verify
-        assert balance == mock_balance
+    # Verify
+    assert balance == mock_balance
 
 
 @pytest.mark.asyncio
@@ -74,17 +74,17 @@ async def test_get_total_pooled_flr(settings):
 
         sceptre = await Sceptre.create(settings)
 
-        # Mock total pooled FLR
-        mock_total = 1000000 * 10**18
-        sceptre.sflr_contract.functions.getTotalPooledFlr = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_total))
-        )
+    # Mock total pooled FLR
+    mock_total = 1000000 * 10**18
+    sceptre.sflr_contract.functions.getTotalPooledFlr = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_total))
+    )
 
-        # Get total
-        total = await sceptre.get_total_pooled_flr()
+    # Get total
+    total = await sceptre.get_total_pooled_flr()
 
-        # Verify
-        assert total == mock_total
+    # Verify
+    assert total == mock_total
 
 
 @pytest.mark.asyncio
@@ -101,18 +101,18 @@ async def test_get_flr_by_shares(settings):
 
         sceptre = await Sceptre.create(settings)
 
-        # Mock conversion (1 sFLR = 1.05 FLR due to rewards)
-        shares = 10 * 10**18
-        flr_amount = int(10.5 * 10**18)
-        sceptre.sflr_contract.functions.getPooledFlrByShares = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=flr_amount))
-        )
+    # Mock conversion (1 sFLR = 1.05 FLR due to rewards)
+    shares = 10 * 10**18
+    flr_amount = int(10.5 * 10**18)
+    sceptre.sflr_contract.functions.getPooledFlrByShares = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=flr_amount))
+    )
 
-        # Convert
-        result = await sceptre.get_flr_by_shares(shares)
+    # Convert
+    result = await sceptre.get_flr_by_shares(shares)
 
-        # Verify
-        assert result == flr_amount
+    # Verify
+    assert result == flr_amount
 
 
 @pytest.mark.asyncio
@@ -129,15 +129,15 @@ async def test_get_shares_by_flr(settings):
 
         sceptre = await Sceptre.create(settings)
 
-        # Mock conversion (10 FLR = 9.52 sFLR due to rewards)
-        flr_amount = 10 * 10**18
-        shares = int(9.52 * 10**18)
-        sceptre.sflr_contract.functions.getSharesByPooledFlr = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=shares))
-        )
+    # Mock conversion (10 FLR = 9.52 sFLR due to rewards)
+    flr_amount = 10 * 10**18
+    shares = int(9.52 * 10**18)
+    sceptre.sflr_contract.functions.getSharesByPooledFlr = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=shares))
+    )
 
-        # Convert
-        result = await sceptre.get_shares_by_flr(flr_amount)
+    # Convert
+    result = await sceptre.get_shares_by_flr(flr_amount)
 
-        # Verify
-        assert result == shares
+    # Verify
+    assert result == shares

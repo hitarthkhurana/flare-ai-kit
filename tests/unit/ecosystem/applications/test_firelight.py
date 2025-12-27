@@ -1,6 +1,6 @@
 """Unit tests for Firelight connector."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -50,17 +50,17 @@ async def test_get_stxrp_balance(settings):
 
         firelight = await Firelight.create(settings)
 
-        # Mock balance query
-        mock_balance = 100 * 10**18
-        firelight.vault_contract.functions.balanceOf = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_balance))
-        )
+    # Mock balance query
+    mock_balance = 100 * 10**18
+    firelight.vault_contract.functions.balanceOf = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_balance))
+    )
 
-        # Get balance
-        balance = await firelight.get_stxrp_balance("0x123")
+    # Get balance
+    balance = await firelight.get_stxrp_balance("0x123")
 
-        # Verify
-        assert balance == mock_balance
+    # Verify
+    assert balance == mock_balance
 
 
 @pytest.mark.asyncio
@@ -77,17 +77,17 @@ async def test_get_total_assets(settings):
 
         firelight = await Firelight.create(settings)
 
-        # Mock total assets
-        mock_total = 1000000 * 10**18
-        firelight.vault_contract.functions.totalAssets = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_total))
-        )
+    # Mock total assets
+    mock_total = 1000000 * 10**18
+    firelight.vault_contract.functions.totalAssets = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_total))
+    )
 
-        # Get total
-        total = await firelight.get_total_assets()
+    # Get total
+    total = await firelight.get_total_assets()
 
-        # Verify
-        assert total == mock_total
+    # Verify
+    assert total == mock_total
 
 
 @pytest.mark.asyncio
@@ -104,17 +104,17 @@ async def test_get_current_period(settings):
 
         firelight = await Firelight.create(settings)
 
-        # Mock current period
-        mock_period = 42
-        firelight.vault_contract.functions.currentPeriod = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_period))
-        )
+    # Mock current period
+    mock_period = 42
+    firelight.vault_contract.functions.currentPeriod = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_period))
+    )
 
-        # Get period
-        period = await firelight.get_current_period()
+    # Get period
+    period = await firelight.get_current_period()
 
-        # Verify
-        assert period == mock_period
+    # Verify
+    assert period == mock_period
 
 
 @pytest.mark.asyncio
@@ -131,15 +131,14 @@ async def test_get_pending_withdrawal(settings):
 
         firelight = await Firelight.create(settings)
 
-        # Mock pending withdrawal
-        mock_amount = 50 * 10**18
-        firelight.vault_contract.functions.withdrawalsOf = MagicMock(
-            return_value=MagicMock(call=MagicMock(return_value=mock_amount))
-        )
+    # Mock pending withdrawal
+    mock_amount = 50 * 10**18
+    firelight.vault_contract.functions.withdrawalsOf = MagicMock(
+        return_value=MagicMock(call=AsyncMock(return_value=mock_amount))
+    )
 
-        # Get pending
-        pending = await firelight.get_pending_withdrawal(10, "0x123")
+    # Get pending
+    pending = await firelight.get_pending_withdrawal(10, "0x123")
 
-        # Verify
-        assert pending == mock_amount
-
+    # Verify
+    assert pending == mock_amount

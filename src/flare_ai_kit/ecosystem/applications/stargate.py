@@ -156,7 +156,7 @@ class Stargate(Flare):
         """
         return list(self.CHAINS.keys())
 
-    def get_bridge_info(self) -> dict[str, str | int]:
+    def get_bridge_info(self) -> dict[str, str | int | list[str]]:
         """
         Get Stargate bridge information for Flare.
 
@@ -168,7 +168,7 @@ class Stargate(Flare):
             >>> print(f"Flare endpoint: {info['endpoint_id']}")
 
         """
-        return {
+        return {  # pyright: ignore[reportReturnType]
             "network": "Flare",
             "endpoint_id": self.FLARE_ENDPOINT_ID,
             "token_messaging": self.TOKEN_MESSAGING,

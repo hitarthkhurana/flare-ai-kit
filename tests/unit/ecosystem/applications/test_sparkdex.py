@@ -35,7 +35,9 @@ class TestSparkDEX:
 
     async def test_create_initializes_router(self, settings):
         """Test that create() initializes the swap router."""
-        with patch("flare_ai_kit.ecosystem.applications.sparkdex.load_abi") as mock_load_abi:
+        with patch(
+            "flare_ai_kit.ecosystem.applications.sparkdex.load_abi"
+        ) as mock_load_abi:
             mock_load_abi.return_value = []  # Return empty list for valid ABI
             sparkdex = await SparkDEX.create(settings)
 
