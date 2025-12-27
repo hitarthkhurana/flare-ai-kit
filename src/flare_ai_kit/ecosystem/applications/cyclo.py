@@ -1,6 +1,6 @@
 """Cyclo protocol connector for non-liquidating leverage on Flare."""
 
-from typing import TYPE_CHECKING, Final, Self
+from typing import TYPE_CHECKING, Self
 
 import structlog
 from eth_typing import ChecksumAddress
@@ -21,15 +21,7 @@ class Cyclo(Flare):
 
     Cyclo allows users to lock collateral (sFLR) and mint cy* tokens that trade
     between $0-$1. Users can unlock collateral by burning cy* tokens + receipt NFTs.
-
-    Contract addresses (Flare mainnet):
-    - cysFLR Vault: 0x19831cfB53A0dbeAD9866C43557C1D48DfF76567
-    - cysFLR Receipt: 0xd387FC43E19a63036d8FCeD559E81f5dDeF7ef09
     """
-
-    # Cyclo contract addresses on Flare mainnet
-    CYSFLR_VAULT: Final[str] = "0x19831cfB53A0dbeAD9866C43557C1D48DfF76567"
-    CYSFLR_RECEIPT: Final[str] = "0xd387FC43E19a63036d8FCeD559E81f5dDeF7ef09"
 
     def __init__(self, settings: EcosystemSettings) -> None:
         """Initialize Cyclo connector."""
@@ -56,22 +48,38 @@ class Cyclo(Flare):
         logger.info("Initializing Cyclo...")
 
         try:
+            # Get addresses from settings
+            vault_address = (
+                settings.contracts.coston2.cyclo_cysflr_vault
+                if settings.is_testnet
+                else settings.contracts.flare.cyclo_cysflr_vault
+            )
+            receipt_address = (
+                settings.contracts.coston2.cyclo_cysflr_receipt
+                if settings.is_testnet
+                else settings.contracts.flare.cyclo_cysflr_receipt
+            )
+
+            if not vault_address or not receipt_address:
+                msg = "Cyclo contract addresses not configured in settings"
+                raise CycloError(msg)
+
             # Initialize cysFLR vault contract
             instance.vault_contract = instance.w3.eth.contract(  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-                address=instance.w3.to_checksum_address(cls.CYSFLR_VAULT),
+                address=instance.w3.to_checksum_address(vault_address),
                 abi=load_abi("CycloVaultSFLR"),
             )
 
             # Initialize cysFLR receipt contract (ERC1155)
             instance.receipt_contract = instance.w3.eth.contract(  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-                address=instance.w3.to_checksum_address(cls.CYSFLR_RECEIPT),
+                address=instance.w3.to_checksum_address(receipt_address),
                 abi=load_abi("CycloReceiptSFLR"),
             )
 
             logger.debug(
                 "Cyclo initialized",
-                vault_address=cls.CYSFLR_VAULT,
-                receipt_address=cls.CYSFLR_RECEIPT,
+                vault_address=vault_address,
+                receipt_address=receipt_address,
             )
             return instance  # noqa: TRY300
 

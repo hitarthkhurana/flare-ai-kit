@@ -20,14 +20,6 @@ class Stargate(Flare):
     # Flare Network (endpointID: 30295)
     FLARE_ENDPOINT_ID: Final[int] = 30295
 
-    # Stargate OFT Token Addresses on Flare
-    STARGATE_ETH: Final[str] = "0x8e8539e4CcD69123c623a106773F2b0cbbc58746"
-    STARGATE_USDC: Final[str] = "0x77C71633C34C3784ede189d74223122422492a0f"
-    STARGATE_USDT: Final[str] = "0x1C10CC06DC6D35970d1D53B2A23c76ef370d4135"
-
-    TOKEN_MESSAGING: Final[str] = "0x45d417612e177672958dC0537C45a8f8d754Ac2E"
-    TREASURER: Final[str] = "0x090194F1EEDc134A680e3b488aBB2D212dba8c01"
-
     # Common Destination Chains
     CHAINS: Final[dict[str, int]] = {
         "ethereum": 30101,
@@ -44,6 +36,7 @@ class Stargate(Flare):
 
     def __init__(self, settings: EcosystemSettings) -> None:
         super().__init__(settings)
+        self.settings = settings
 
     @classmethod
     async def create(cls, settings: EcosystemSettings) -> "Self":
@@ -63,12 +56,28 @@ class Stargate(Flare):
         instance = cls(settings)
         logger.info("Initializing Stargate bridge connector...")
         try:
+            # Verify addresses are configured
+            contracts = (
+                settings.contracts.coston2
+                if settings.is_testnet
+                else settings.contracts.flare
+            )
+            if not all(
+                [
+                    contracts.stargate_token_messaging,
+                    contracts.stargate_treasurer,
+                    contracts.stargate_eth_oft,
+                    contracts.stargate_usdc_oft,
+                    contracts.stargate_usdt_oft,
+                ]
+            ):
+                msg = "Stargate contract addresses not configured in settings"
+                raise StargateError(msg)
+
             logger.debug(
                 "Stargate connector initialized",
                 endpoint_id=cls.FLARE_ENDPOINT_ID,
-                eth_oft=cls.STARGATE_ETH,
-                usdc_oft=cls.STARGATE_USDC,
-                usdt_oft=cls.STARGATE_USDT,
+                network="testnet" if settings.is_testnet else "mainnet",
             )
             return instance  # noqa: TRY300
         except Exception as e:
@@ -94,13 +103,19 @@ class Stargate(Flare):
             >>> print(f"USDC OFT: {oft_addr}")
 
         """
+        contracts = (
+            self.settings.contracts.coston2
+            if self.settings.is_testnet
+            else self.settings.contracts.flare
+        )
+
         token_upper = token.upper()
         if token_upper == "ETH":
-            return self.STARGATE_ETH
+            return str(contracts.stargate_eth_oft)
         if token_upper == "USDC":
-            return self.STARGATE_USDC
+            return str(contracts.stargate_usdc_oft)
         if token_upper == "USDT":
-            return self.STARGATE_USDT
+            return str(contracts.stargate_usdt_oft)
         msg = f"Unsupported token: {token}. Supported: ETH, USDC, USDT"
         raise StargateError(msg)
 
@@ -168,11 +183,16 @@ class Stargate(Flare):
             >>> print(f"Flare endpoint: {info['endpoint_id']}")
 
         """
+        contracts = (
+            self.settings.contracts.coston2
+            if self.settings.is_testnet
+            else self.settings.contracts.flare
+        )
         return {  # pyright: ignore[reportReturnType]
             "network": "Flare",
             "endpoint_id": self.FLARE_ENDPOINT_ID,
-            "token_messaging": self.TOKEN_MESSAGING,
-            "treasurer": self.TREASURER,
+            "token_messaging": str(contracts.stargate_token_messaging),
+            "treasurer": str(contracts.stargate_treasurer),
             "supported_tokens": self.get_supported_tokens(),
             "supported_chains": self.get_supported_chains(),
         }

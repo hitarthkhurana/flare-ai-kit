@@ -1,6 +1,6 @@
 """Firelight XRP staking protocol connector for Flare Network."""
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from eth_typing import ChecksumAddress
 from structlog import get_logger
@@ -19,8 +19,6 @@ logger = get_logger(__name__)
 
 class Firelight(Flare):
     """Firelight XRP staking protocol connector (stXRP vault)."""
-
-    STXRP_VAULT: Final[str] = "0x4C18Ff3C89632c3Dd62E796c0aFA5c07c4c1B2b3"
 
     def __init__(self, settings: EcosystemSettings) -> None:
         super().__init__(settings)
@@ -44,12 +42,22 @@ class Firelight(Flare):
         instance = cls(settings)
         logger.info("Initializing Firelight stXRP vault...")
         try:
+            # Get address from settings
+            vault_address = (
+                settings.contracts.coston2.firelight_stxrp_vault
+                if settings.is_testnet
+                else settings.contracts.flare.firelight_stxrp_vault
+            )
+            if not vault_address:
+                msg = "Firelight stXRP vault address not configured in settings"
+                raise FirelightError(msg)
+
             instance.vault_contract = instance.w3.eth.contract(  # pyright: ignore[reportAttributeAccessIssue]
-                address=instance.w3.to_checksum_address(cls.STXRP_VAULT),
+                address=instance.w3.to_checksum_address(vault_address),
                 abi=load_abi("FirelightVault_Implementation"),  # Use implementation ABI
             )
             logger.debug(
-                "Firelight stXRP vault initialized", contract_address=cls.STXRP_VAULT
+                "Firelight stXRP vault initialized", contract_address=vault_address
             )
             return instance  # noqa: TRY300
         except Exception as e:

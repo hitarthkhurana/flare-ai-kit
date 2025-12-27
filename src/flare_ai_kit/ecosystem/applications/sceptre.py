@@ -1,6 +1,6 @@
 """Sceptre liquid staking connector for Flare Network."""
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from eth_typing import ChecksumAddress
 from structlog import get_logger
@@ -19,8 +19,6 @@ logger = get_logger(__name__)
 
 class Sceptre(Flare):
     """Sceptre liquid staking connector (stake FLR → receive sFLR)."""
-
-    SFLR_CONTRACT: Final[str] = "0x12e605bc104e93B45e1aD99F9e555f659051c2BB"
 
     def __init__(self, settings: EcosystemSettings) -> None:
         super().__init__(settings)
@@ -44,12 +42,22 @@ class Sceptre(Flare):
         instance = cls(settings)
         logger.info("Initializing Sceptre sFLR connector...")
         try:
+            # Get address from settings
+            sflr_address = (
+                settings.contracts.coston2.sceptre_sflr
+                if settings.is_testnet
+                else settings.contracts.flare.sceptre_sflr
+            )
+            if not sflr_address:
+                msg = "Sceptre sFLR contract address not configured in settings"
+                raise SceptreError(msg)
+
             instance.sflr_contract = instance.w3.eth.contract(  # pyright: ignore[reportAttributeAccessIssue]
-                address=instance.w3.to_checksum_address(cls.SFLR_CONTRACT),
+                address=instance.w3.to_checksum_address(sflr_address),
                 abi=load_abi("SceptreSFLR"),
             )
             logger.debug(
-                "Sceptre sFLR connector initialized", contract_address=cls.SFLR_CONTRACT
+                "Sceptre sFLR connector initialized", contract_address=sflr_address
             )
             return instance  # noqa: TRY300
         except Exception as e:

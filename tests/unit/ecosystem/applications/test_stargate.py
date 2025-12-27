@@ -27,8 +27,10 @@ async def test_stargate_initialization(settings):
         stargate = await Stargate.create(settings)
 
         assert stargate.FLARE_ENDPOINT_ID == 30295
-        assert stargate.STARGATE_ETH == "0x8e8539e4CcD69123c623a106773F2b0cbbc58746"
-        assert stargate.STARGATE_USDC == "0x77C71633C34C3784ede189d74223122422492a0f"
+        # Verify addresses are loaded from settings
+        assert stargate.settings.contracts.flare.stargate_eth_oft is not None
+        assert stargate.settings.contracts.flare.stargate_usdc_oft is not None
+        assert stargate.settings.contracts.flare.stargate_usdt_oft is not None
 
 
 @pytest.mark.asyncio

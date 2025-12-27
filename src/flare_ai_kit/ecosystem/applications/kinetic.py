@@ -1,6 +1,6 @@
 """Kinetic lending protocol connector for Flare Network."""
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from eth_typing import ChecksumAddress
 from structlog import get_logger
@@ -19,8 +19,6 @@ logger = get_logger(__name__)
 
 class Kinetic(Flare):
     """Kinetic lending protocol connector (ksFLR market)."""
-
-    KSFLR_MARKET: Final[str] = "0x291487beC339c2fE5D83DD45F0a15EFC9Ac45656"
 
     def __init__(self, settings: EcosystemSettings) -> None:
         super().__init__(settings)
@@ -44,12 +42,22 @@ class Kinetic(Flare):
         instance = cls(settings)
         logger.info("Initializing Kinetic ksFLR market...")
         try:
+            # Get address from settings
+            ksflr_address = (
+                settings.contracts.coston2.kinetic_ksflr
+                if settings.is_testnet
+                else settings.contracts.flare.kinetic_ksflr
+            )
+            if not ksflr_address:
+                msg = "Kinetic ksFLR contract address not configured in settings"
+                raise KineticError(msg)
+
             instance.ksflr_contract = instance.w3.eth.contract(  # pyright: ignore[reportAttributeAccessIssue]
-                address=instance.w3.to_checksum_address(cls.KSFLR_MARKET),
+                address=instance.w3.to_checksum_address(ksflr_address),
                 abi=load_abi("KineticKToken"),
             )
             logger.debug(
-                "Kinetic ksFLR market initialized", contract_address=cls.KSFLR_MARKET
+                "Kinetic ksFLR market initialized", contract_address=ksflr_address
             )
             return instance  # noqa: TRY300
         except Exception as e:
