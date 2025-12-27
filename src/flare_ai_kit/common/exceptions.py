@@ -158,3 +158,10 @@ class CycloError(FlareAIKitError):
 class SceptreError(FlareAIKitError):
     """Base exception for errors related to Sceptre liquid staking interactions."""
 
+
+# --- Kinetic Errors ---
+
+
+class KineticError(FlareAIKitError):
+    """Base exception for errors related to Kinetic lending protocol interactions."""
+
