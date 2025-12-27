@@ -165,3 +165,10 @@ class SceptreError(FlareAIKitError):
 class KineticError(FlareAIKitError):
     """Base exception for errors related to Kinetic lending protocol interactions."""
 
+
+# --- Firelight Errors ---
+
+
+class FirelightError(FlareAIKitError):
+    """Base exception for errors related to Firelight XRP staking interactions."""
+
