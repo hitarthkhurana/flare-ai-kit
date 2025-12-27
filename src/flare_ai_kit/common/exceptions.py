@@ -172,3 +172,9 @@ class KineticError(FlareAIKitError):
 class FirelightError(FlareAIKitError):
     """Base exception for errors related to Firelight XRP staking interactions."""
 
+
+# --- Stargate Errors ---
+
+
+class StargateError(FlareAIKitError):
+    """Base exception for errors related to Stargate bridge interactions."""
