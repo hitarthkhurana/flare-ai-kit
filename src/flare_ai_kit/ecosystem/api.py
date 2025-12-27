@@ -1,6 +1,6 @@
 """Module providing access to the Flare ecosystem components."""
 
-from .applications import Cyclo, SparkDEX
+from .applications import Cyclo, Sceptre, SparkDEX
 from .explorer import BlockExplorer
 from .flare import Flare
 from .protocols import DataAvailabilityLayer, FAssets, FtsoV2
@@ -12,5 +12,6 @@ __all__ = [
     "FAssets",
     "Flare",
     "FtsoV2",
+    "Sceptre",
     "SparkDEX",
 ]

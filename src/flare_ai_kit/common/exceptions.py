@@ -146,5 +146,15 @@ class SparkDEXError(FlareAIKitError):
 
 
 # --- Cyclo Errors ---
+
+
 class CycloError(FlareAIKitError):
     """Base exception for errors related to Cyclo protocol interactions."""
+
+
+# --- Sceptre Errors ---
+
+
+class SceptreError(FlareAIKitError):
+    """Base exception for errors related to Sceptre liquid staking interactions."""
+
